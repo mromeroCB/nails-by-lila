@@ -403,12 +403,19 @@
  * con las fotos de ese producto adentro (cualquier nombre de archivo).
  * El tab "fotos" del sheet (columnas id | file_id) es el índice que la
  * página lee — se llena solo con el Apps Script "syncFotos" del README.
+ *
+ * MAIN_PHOTOS_FOLDER_URL de abajo es solo referencia para humanos — el código
+ * NUNCA la lee (la página solo sabe de fotos vía el tab "fotos"). Si cambiás
+ * la carpeta madre en Drive, actualizá el link acá Y el FOLDER_ID dentro del
+ * Apps Script "syncFotos" (Extensiones → Apps Script en el sheet), sino el
+ * script sigue leyendo la carpeta vieja.
  */
 const CONFIG = {
   SHEET_ID: "1VZOHrfKm3vfoz30jzcKSnhVe7Ajo51s4GP8YYFMOyOg",
   SHEET_GID: "725225400",  // pestaña "productos"
   FOTOS_SHEET: "fotos",    // tab con índice id → file_id de Drive ("" = deshabilitado)
-  WHATSAPP_NUMBER: "",     // ej: "5491122334455"
+  MAIN_PHOTOS_FOLDER_URL: "https://drive.google.com/drive/folders/1B4DnERnY3ev5dVZKmYu2CXWZzG3lyaOu", // solo referencia, ver arriba
+  WHATSAPP_NUMBER: "",     // ej: "5491122334455" — FALTA completar
   STORE_NAME: "Nails by Lila",
   STORE_TAGLINE: "Insumos de manicuría",
   CURRENCY: "$",
