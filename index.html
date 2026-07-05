@@ -7,18 +7,18 @@
 <link rel="icon" href="logo.jpeg">
 <style>
   :root {
-    --bg: #f2e6fa;
+    --bg: #f7eefc;
     --surface: #ffffff;
     --text: #2e2440;
-    --text-soft: #6e5a94;
-    --accent: #8b3fd0;
-    --accent-soft: #e4cdf7;
-    --accent-dark: #641fa0;
-    --border: #dcb8f0;
+    --text-soft: #71618f;
+    --accent: #8b52c4;
+    --accent-soft: #ecdbf6;
+    --accent-dark: #6a2fa0;
+    --border: #e5cbf1;
     --wpp: #25d366;
     --wpp-dark: #1eb955;
     --radius: 14px;
-    --shadow: 0 2px 10px rgba(100, 31, 160, .15);
+    --shadow: 0 2px 10px rgba(100, 47, 160, .12);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -32,7 +32,7 @@
   /* ---------- Header ---------- */
   header {
     position: sticky; top: 0; z-index: 50;
-    background: var(--surface);
+    background: #fbf5fd;
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow);
   }
@@ -43,7 +43,7 @@
   }
   .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .brand-logo {
-    width: 56px; height: 56px; border-radius: 50%;
+    width: 78px; height: 78px; border-radius: 50%;
     background: var(--accent-soft); color: var(--accent);
     display: flex; align-items: center; justify-content: center;
     font-size: 19px; flex-shrink: 0; overflow: hidden;
@@ -83,18 +83,12 @@
     position: absolute; left: 12px; font-size: 14px; opacity: .6; pointer-events: none;
   }
   .search-box input {
-    width: 100%; border: 1px solid var(--border); background: var(--surface);
+    width: 100%; border: 1px solid var(--border); background: var(--bg);
     border-radius: 999px; padding: 9px 14px 9px 34px; font-size: 14px;
     color: var(--text); font-family: inherit;
   }
   .search-box input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
   .search-box input::-webkit-search-cancel-button { cursor: pointer; }
-  .avail-toggle {
-    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-    font-size: 13px; color: var(--text-soft); cursor: pointer; user-select: none;
-  }
-  .avail-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-
   /* ---------- Section nav ---------- */
   nav.sections {
     max-width: 1080px; margin: 0 auto;
@@ -171,6 +165,29 @@
     background: rgba(255,255,255,.6); box-shadow: 0 0 3px rgba(0,0,0,.3);
   }
   .img-dots span.on { background: var(--accent); }
+
+  .img-loader {
+    position: absolute; inset: 0; z-index: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft);
+  }
+  .polish-bottle {
+    width: 34px; height: 84px; position: relative; overflow: hidden;
+    background: var(--accent-soft);
+    clip-path: path("M4,0 L30,0 L22,14 L22,18 C29,23 32,30 32,40 C32,54 31,66 26,75 C24,79 21,80 17,80 C13,80 10,79 8,75 C3,66 2,54 2,40 C2,30 5,23 12,18 L12,14 Z");
+  }
+  .polish-fill {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 0;
+    background: var(--accent);
+    animation: polishFill 2.2s ease-in-out infinite;
+  }
+  @keyframes polishFill {
+    0%   { height: 6%; }
+    45%  { height: 94%; }
+    65%  { height: 94%; }
+    100% { height: 6%; }
+  }
+
   .card-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
   .card-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
   .card-desc {
@@ -338,10 +355,6 @@
       <span class="search-icon">🔎</span>
       <input type="search" id="search-input" placeholder="Buscar productos..." aria-label="Buscar productos">
     </div>
-    <label class="avail-toggle">
-      <input type="checkbox" id="filter-disponible">
-      Solo disponibles
-    </label>
   </div>
   <nav class="sections" id="section-nav"></nav>
 </header>
@@ -438,7 +451,7 @@ const DEMO_DATA = [
 /* ================= STATE ================= */
 let products = [];          // [{id, seccion, nombre, descripcion, precio, fotos: [urls], disponible}]
 let cart = loadCart();      // { [id]: qty }
-let filters = { query: "", seccion: null, onlyAvailable: false };
+let filters = { query: "", seccion: null };
 let openModalProductId = null;
 
 function normalizeText(s) {
@@ -447,7 +460,6 @@ function normalizeText(s) {
 
 function matchesFilters(p) {
   if (filters.seccion && p.seccion !== filters.seccion) return false;
-  if (filters.onlyAvailable && !p.disponible) return false;
   if (filters.query) {
     const q = normalizeText(filters.query);
     const haystack = normalizeText(p.nombre + " " + p.descripcion + " " + p.seccion);
@@ -695,29 +707,42 @@ function buildImageCarousel(container, fotos, alt) {
   container.innerHTML = "";
   if (!fotos.length) { container.textContent = "💅"; return; }
 
+  const loader = document.createElement("div");
+  loader.className = "img-loader";
+  loader.innerHTML = '<div class="polish-bottle"><div class="polish-fill"></div></div>';
+
   const fallback = document.createElement("span");
   fallback.textContent = "💅";
+  fallback.style.display = "none";
   const el = document.createElement("img");
   el.alt = alt;
   el.loading = "lazy";
-  container.append(fallback, el);
+  el.style.visibility = "hidden";
+  container.append(loader, fallback, el);
 
   /* El endpoint thumbnail de Drive falla esporádicamente en frío: reintentar
    * con backoff antes de caer al placeholder (sin destruir el carousel). */
   let retries = 0;
-  el.onload = () => { el.style.visibility = ""; };
+  el.onload = () => { el.style.visibility = ""; loader.style.display = "none"; };
   el.onerror = () => {
     if (retries < 3) {
       retries++;
       const sep = el.dataset.src.includes("?") ? "&" : "?";
       setTimeout(() => { el.src = el.dataset.src + sep + "r=" + retries; }, 700 * retries);
-    } else el.style.visibility = "hidden";
+    } else {
+      el.style.visibility = "hidden";
+      loader.style.display = "none";
+      fallback.style.display = "";
+    }
   };
 
   let current = 0;
   const show = i => {
     current = (i + fotos.length) % fotos.length;
     retries = 0;
+    loader.style.display = "flex";
+    fallback.style.display = "none";
+    el.style.visibility = "hidden";
     el.dataset.src = fotos[current];
     el.src = fotos[current];
     dots.querySelectorAll("span").forEach((d, n) => d.classList.toggle("on", n === current));
@@ -957,10 +982,6 @@ document.addEventListener("keydown", e => {
 
 document.getElementById("search-input").oninput = e => {
   filters.query = e.target.value;
-  renderCatalog();
-};
-document.getElementById("filter-disponible").onchange = e => {
-  filters.onlyAvailable = e.target.checked;
   renderCatalog();
 };
 
