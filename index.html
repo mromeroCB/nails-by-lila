@@ -172,9 +172,15 @@
     background: var(--accent-soft);
   }
   .polish-bottle {
-    width: 34px; height: 84px; position: relative; overflow: hidden;
+    width: 34px; height: 84px; position: relative;
+    background: var(--accent-dark);
+    clip-path: path("M4,0 L30,0 L22,14 L22,18 C29,23 32,30 32,40 C32,54 31,66 26,75 C24,79 21,80 17,80 C13,80 10,79 8,75 C3,66 2,54 2,40 C2,30 5,23 12,18 L12,14 Z");
+  }
+  .polish-inner {
+    position: absolute; inset: 0; overflow: hidden;
     background: var(--accent-soft);
     clip-path: path("M4,0 L30,0 L22,14 L22,18 C29,23 32,30 32,40 C32,54 31,66 26,75 C24,79 21,80 17,80 C13,80 10,79 8,75 C3,66 2,54 2,40 C2,30 5,23 12,18 L12,14 Z");
+    transform: scale(0.88);
   }
   .polish-fill {
     position: absolute; left: 0; right: 0; bottom: 0; height: 0;
@@ -709,7 +715,7 @@ function buildImageCarousel(container, fotos, alt) {
 
   const loader = document.createElement("div");
   loader.className = "img-loader";
-  loader.innerHTML = '<div class="polish-bottle"><div class="polish-fill"></div></div>';
+  loader.innerHTML = '<div class="polish-bottle"><div class="polish-inner"><div class="polish-fill"></div></div></div>';
 
   const fallback = document.createElement("span");
   fallback.textContent = "💅";
