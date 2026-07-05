@@ -142,7 +142,7 @@
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); overflow: hidden;
     display: flex; flex-direction: column;
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow); cursor: pointer;
   }
   .card-img {
     aspect-ratio: 4 / 3; background: var(--accent-soft);
@@ -206,6 +206,35 @@
     background: var(--border); padding: 5px 10px; border-radius: 999px;
   }
   .card.unavailable .card-img, .card.unavailable .card-name, .card.unavailable .card-price { opacity: .45; }
+
+  /* ---------- Product modal ---------- */
+  .product-modal {
+    position: fixed; top: 50%; left: 50%; z-index: 101;
+    transform: translate(-50%, -50%) scale(.96);
+    background: var(--surface); border-radius: var(--radius);
+    width: min(520px, 92vw); max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  }
+  .product-modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+  .modal-close {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    border: none; cursor: pointer;
+    background: rgba(255,255,255,.9); color: var(--text-soft);
+    width: 34px; height: 34px; border-radius: 50%; font-size: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  .modal-img {
+    aspect-ratio: 4 / 3; background: var(--accent-soft); position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 48px;
+  }
+  .modal-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .modal-body h2 { font-size: 19px; }
+  .modal-body p { font-size: 14px; color: var(--text-soft); line-height: 1.5; }
+  .modal-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .modal-price { font-size: 20px; font-weight: 700; color: var(--accent-dark); }
 
   /* ---------- Cart drawer ---------- */
   .overlay {
@@ -346,6 +375,20 @@
   </div>
 </aside>
 
+<div class="overlay" id="modal-overlay"></div>
+<div class="product-modal" id="product-modal" role="dialog" aria-modal="true" aria-labelledby="modal-name">
+  <button class="modal-close" id="modal-close" aria-label="Cerrar">✕</button>
+  <div class="modal-img" id="modal-img"></div>
+  <div class="modal-body">
+    <h2 id="modal-name"></h2>
+    <p id="modal-desc"></p>
+    <div class="modal-footer">
+      <span class="modal-price" id="modal-price"></span>
+      <div id="modal-action"></div>
+    </div>
+  </div>
+</div>
+
 <footer>Los precios pueden variar. El pedido se confirma por WhatsApp.</footer>
 
 <script>
@@ -389,6 +432,7 @@ const DEMO_DATA = [
 let products = [];          // [{id, seccion, nombre, descripcion, precio, fotos: [urls], disponible}]
 let cart = loadCart();      // { [id]: qty }
 let filters = { query: "", seccion: null, onlyAvailable: false };
+let openModalProductId = null;
 
 function normalizeText(s) {
   return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -552,6 +596,38 @@ function money(n) {
 function render() {
   renderCatalog();
   renderCart();
+  if (openModalProductId) {
+    const p = products.find(x => x.id === openModalProductId);
+    if (p) renderCardAction(document.getElementById("modal-action"), p);
+    else closeProductModal();
+  }
+}
+
+function updateScrollLock() {
+  const locked = document.getElementById("drawer").classList.contains("open")
+    || document.getElementById("product-modal").classList.contains("open");
+  document.body.style.overflow = locked ? "hidden" : "";
+}
+
+function openProductModal(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  openModalProductId = id;
+  document.getElementById("modal-name").textContent = p.nombre;
+  document.getElementById("modal-desc").textContent = p.descripcion;
+  document.getElementById("modal-price").textContent = money(p.precio);
+  buildImageCarousel(document.getElementById("modal-img"), p.fotos, p.nombre);
+  renderCardAction(document.getElementById("modal-action"), p);
+  document.getElementById("product-modal").classList.add("open");
+  document.getElementById("modal-overlay").classList.add("open");
+  updateScrollLock();
+}
+
+function closeProductModal() {
+  openModalProductId = null;
+  document.getElementById("product-modal").classList.remove("open");
+  document.getElementById("modal-overlay").classList.remove("open");
+  updateScrollLock();
 }
 
 function renderCatalog() {
@@ -607,63 +683,70 @@ function renderCatalog() {
   }
 }
 
+/* Carrusel de fotos reusado por la card del catálogo y el modal de detalle. */
+function buildImageCarousel(container, fotos, alt) {
+  container.innerHTML = "";
+  if (!fotos.length) { container.textContent = "💅"; return; }
+
+  const fallback = document.createElement("span");
+  fallback.textContent = "💅";
+  const el = document.createElement("img");
+  el.alt = alt;
+  el.loading = "lazy";
+  container.append(fallback, el);
+
+  /* El endpoint thumbnail de Drive falla esporádicamente en frío: reintentar
+   * con backoff antes de caer al placeholder (sin destruir el carousel). */
+  let retries = 0;
+  el.onload = () => { el.style.visibility = ""; };
+  el.onerror = () => {
+    if (retries < 3) {
+      retries++;
+      const sep = el.dataset.src.includes("?") ? "&" : "?";
+      setTimeout(() => { el.src = el.dataset.src + sep + "r=" + retries; }, 700 * retries);
+    } else el.style.visibility = "hidden";
+  };
+
+  let current = 0;
+  const show = i => {
+    current = (i + fotos.length) % fotos.length;
+    retries = 0;
+    el.dataset.src = fotos[current];
+    el.src = fotos[current];
+    dots.querySelectorAll("span").forEach((d, n) => d.classList.toggle("on", n === current));
+  };
+
+  const dots = document.createElement("div");
+  dots.className = "img-dots";
+  if (fotos.length > 1) {
+    fotos.forEach((_, n) => {
+      const d = document.createElement("span");
+      d.onclick = e => { e.stopPropagation(); show(n); };
+      dots.appendChild(d);
+    });
+    const prev = document.createElement("button");
+    prev.className = "img-nav prev";
+    prev.textContent = "‹";
+    prev.setAttribute("aria-label", "Foto anterior");
+    prev.onclick = e => { e.stopPropagation(); show(current - 1); };
+    const next = document.createElement("button");
+    next.className = "img-nav next";
+    next.textContent = "›";
+    next.setAttribute("aria-label", "Foto siguiente");
+    next.onclick = e => { e.stopPropagation(); show(current + 1); };
+    container.append(prev, next, dots);
+  }
+  show(0);
+}
+
 function productCard(p) {
   const card = document.createElement("article");
   card.className = "card" + (p.disponible ? "" : " unavailable");
+  card.onclick = () => openProductModal(p.id);
 
   const img = document.createElement("div");
   img.className = "card-img";
-  if (p.fotos.length) {
-    const fallback = document.createElement("span");
-    fallback.textContent = "💅";
-    const el = document.createElement("img");
-    el.alt = p.nombre;
-    el.loading = "lazy";
-    img.append(fallback, el);
-
-    /* El endpoint thumbnail de Drive falla esporádicamente en frío: reintentar
-     * con backoff antes de caer al placeholder (sin destruir el carousel). */
-    let retries = 0;
-    el.onload = () => { el.style.visibility = ""; };
-    el.onerror = () => {
-      if (retries < 3) {
-        retries++;
-        const sep = el.dataset.src.includes("?") ? "&" : "?";
-        setTimeout(() => { el.src = el.dataset.src + sep + "r=" + retries; }, 700 * retries);
-      } else el.style.visibility = "hidden";
-    };
-
-    let current = 0;
-    const show = i => {
-      current = (i + p.fotos.length) % p.fotos.length;
-      retries = 0;
-      el.dataset.src = p.fotos[current];
-      el.src = p.fotos[current];
-      dots.querySelectorAll("span").forEach((d, n) => d.classList.toggle("on", n === current));
-    };
-
-    const dots = document.createElement("div");
-    dots.className = "img-dots";
-    if (p.fotos.length > 1) {
-      p.fotos.forEach((_, n) => {
-        const d = document.createElement("span");
-        d.onclick = e => { e.stopPropagation(); show(n); };
-        dots.appendChild(d);
-      });
-      const prev = document.createElement("button");
-      prev.className = "img-nav prev";
-      prev.textContent = "‹";
-      prev.setAttribute("aria-label", "Foto anterior");
-      prev.onclick = e => { e.stopPropagation(); show(current - 1); };
-      const next = document.createElement("button");
-      next.className = "img-nav next";
-      next.textContent = "›";
-      next.setAttribute("aria-label", "Foto siguiente");
-      next.onclick = e => { e.stopPropagation(); show(current + 1); };
-      img.append(prev, next, dots);
-    }
-    show(0);
-  } else img.textContent = "💅";
+  buildImageCarousel(img, p.fotos, p.nombre);
 
   const body = document.createElement("div");
   body.className = "card-body";
@@ -711,19 +794,19 @@ function renderCardAction(container, p) {
     btn.className = "add-btn";
     btn.textContent = "+";
     btn.setAttribute("aria-label", "Agregar " + p.nombre);
-    btn.onclick = () => setQty(p.id, 1);
+    btn.onclick = e => { e.stopPropagation(); setQty(p.id, 1); };
     container.appendChild(btn);
   } else {
     const stepper = document.createElement("div");
     stepper.className = "qty-stepper";
     const minus = document.createElement("button");
     minus.textContent = "−";
-    minus.onclick = () => setQty(p.id, qty - 1);
+    minus.onclick = e => { e.stopPropagation(); setQty(p.id, qty - 1); };
     const num = document.createElement("span");
     num.textContent = qty;
     const plus = document.createElement("button");
     plus.textContent = "+";
-    plus.onclick = () => setQty(p.id, qty + 1);
+    plus.onclick = e => { e.stopPropagation(); setQty(p.id, qty + 1); };
     stepper.append(minus, num, plus);
     container.appendChild(stepper);
   }
@@ -851,7 +934,7 @@ function slug(s) {
 function openDrawer(open) {
   document.getElementById("drawer").classList.toggle("open", open);
   document.getElementById("overlay").classList.toggle("open", open);
-  document.body.style.overflow = open ? "hidden" : "";
+  updateScrollLock();
 }
 
 document.getElementById("cart-open").onclick = () => openDrawer(true);
@@ -859,7 +942,11 @@ document.getElementById("fab").onclick = () => openDrawer(true);
 document.getElementById("cart-close").onclick = () => openDrawer(false);
 document.getElementById("overlay").onclick = () => openDrawer(false);
 document.getElementById("wpp-send").onclick = sendWhatsApp;
-document.addEventListener("keydown", e => { if (e.key === "Escape") openDrawer(false); });
+document.getElementById("modal-close").onclick = closeProductModal;
+document.getElementById("modal-overlay").onclick = closeProductModal;
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { openDrawer(false); closeProductModal(); }
+});
 
 document.getElementById("search-input").oninput = e => {
   filters.query = e.target.value;
