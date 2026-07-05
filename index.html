@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nails by Lila</title>
+<link rel="icon" href="logo.jpeg">
+<style>
+  :root {
+    --bg: #faf7fd;
+    --surface: #ffffff;
+    --text: #2e2440;
+    --text-soft: #7d6f95;
+    --accent: #8b5fbf;
+    --accent-soft: #f1e6fa;
+    --accent-dark: #6a3fa0;
+    --border: #e9dcf5;
+    --wpp: #25d366;
+    --wpp-dark: #1eb955;
+    --radius: 14px;
+    --shadow: 0 2px 10px rgba(107, 63, 160, .1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .header-inner {
+    max-width: 1080px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; gap: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-logo {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; flex-shrink: 0; overflow: hidden;
+  }
+  .brand-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .brand h1 { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand p { font-size: 12px; color: var(--text-soft); }
+
+  .cart-btn {
+    position: relative; border: none; cursor: pointer;
+    background: var(--accent); color: #fff;
+    padding: 10px 16px; border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    transition: background .15s;
+  }
+  .cart-btn:hover { background: var(--accent-dark); }
+  .cart-badge {
+    background: #fff; color: var(--accent);
+    border-radius: 999px; min-width: 20px; height: 20px;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 5px;
+  }
+
+  /* ---------- Filters ---------- */
+  .filters {
+    max-width: 1080px; margin: 0 auto;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 10px 16px 0;
+  }
+  .search-box {
+    flex: 1; min-width: 200px; position: relative;
+    display: flex; align-items: center;
+  }
+  .search-icon {
+    position: absolute; left: 12px; font-size: 14px; opacity: .6; pointer-events: none;
+  }
+  .search-box input {
+    width: 100%; border: 1px solid var(--border); background: var(--surface);
+    border-radius: 999px; padding: 9px 14px 9px 34px; font-size: 14px;
+    color: var(--text); font-family: inherit;
+  }
+  .search-box input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .search-box input::-webkit-search-cancel-button { cursor: pointer; }
+  .avail-toggle {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    font-size: 13px; color: var(--text-soft); cursor: pointer; user-select: none;
+  }
+  .avail-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+  /* ---------- Section nav ---------- */
+  nav.sections {
+    max-width: 1080px; margin: 0 auto;
+    display: flex; gap: 8px; overflow-x: auto;
+    padding: 10px 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  nav.sections::-webkit-scrollbar { display: none; }
+  .section-chip {
+    flex-shrink: 0; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-soft); padding: 7px 14px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
+    transition: all .15s;
+  }
+  .section-chip.active, .section-chip:hover {
+    background: var(--accent-soft); color: var(--accent-dark); border-color: var(--accent-soft);
+  }
+
+  /* ---------- Main ---------- */
+  main { max-width: 1080px; margin: 0 auto; padding: 8px 16px 120px; }
+
+  .status-msg { text-align: center; padding: 48px 16px; color: var(--text-soft); font-size: 14px; }
+  .status-msg.error { color: #b3453f; }
+
+  .section-block { margin-top: 28px; scroll-margin-top: 120px; }
+  .section-block h2 {
+    font-size: 20px; font-weight: 700; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-block h2::after {
+    content: ""; flex: 1; height: 1px; background: var(--border);
+  }
+  .section-count { font-size: 13px; color: var(--text-soft); margin-bottom: 14px; }
+
+  .grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+  @media (min-width: 640px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: var(--shadow);
+  }
+  .card-img {
+    aspect-ratio: 4 / 3; background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 34px; overflow: hidden;
+    position: relative;
+  }
+  .card-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .img-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    border: none; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,.85); color: var(--accent-dark);
+    font-size: 18px; line-height: 1; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  .img-nav.prev { left: 6px; }
+  .img-nav.next { right: 6px; }
+  .img-dots {
+    position: absolute; bottom: 6px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 5px;
+  }
+  .img-dots span {
+    width: 7px; height: 7px; border-radius: 50%; cursor: pointer;
+    background: rgba(255,255,255,.6); box-shadow: 0 0 3px rgba(0,0,0,.3);
+  }
+  .img-dots span.on { background: var(--accent); }
+  .card-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .card-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .card-desc {
+    font-size: 12px; color: var(--text-soft);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 6px; }
+  .card-price { font-size: 15px; font-weight: 700; color: var(--accent-dark); }
+
+  .add-btn {
+    border: none; cursor: pointer;
+    background: var(--accent); color: #fff;
+    width: 34px; height: 34px; border-radius: 50%;
+    font-size: 18px; line-height: 1; font-weight: 600;
+    transition: background .15s, transform .1s;
+  }
+  .add-btn:hover { background: var(--accent-dark); }
+  .add-btn:active { transform: scale(.9); }
+
+  .qty-stepper {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--accent-soft); border-radius: 999px; padding: 3px;
+  }
+  .qty-stepper button {
+    border: none; cursor: pointer; background: var(--surface); color: var(--accent-dark);
+    width: 28px; height: 28px; border-radius: 50%; font-size: 15px; font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  }
+  .qty-stepper span { font-size: 14px; font-weight: 700; min-width: 16px; text-align: center; color: var(--accent-dark); }
+
+  .sold-out {
+    font-size: 12px; font-weight: 600; color: var(--text-soft);
+    background: var(--border); padding: 5px 10px; border-radius: 999px;
+  }
+  .card.unavailable .card-img, .card.unavailable .card-name, .card.unavailable .card-price { opacity: .45; }
+
+  /* ---------- Cart drawer ---------- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(35, 22, 18, .45);
+    opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 90;
+  }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 100;
+    width: min(400px, 100vw);
+    background: var(--surface);
+    transform: translateX(100%); transition: transform .25s ease;
+    display: flex; flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0,0,0,.15);
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px; border-bottom: 1px solid var(--border);
+  }
+  .drawer-head h2 { font-size: 17px; }
+  .drawer-close {
+    border: none; background: var(--bg); cursor: pointer;
+    width: 34px; height: 34px; border-radius: 50%; font-size: 16px; color: var(--text-soft);
+  }
+  .drawer-items { flex: 1; overflow-y: auto; padding: 8px 16px; }
+  .cart-empty { text-align: center; color: var(--text-soft); padding: 40px 12px; font-size: 14px; }
+
+  .cart-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .cart-row-info { flex: 1; min-width: 0; }
+  .cart-row-name { font-size: 14px; font-weight: 600; }
+  .cart-row-price { font-size: 12px; color: var(--text-soft); }
+  .cart-row-subtotal { font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .cart-remove {
+    border: none; background: none; cursor: pointer;
+    color: var(--text-soft); font-size: 15px; padding: 4px;
+  }
+  .cart-remove:hover { color: #b3453f; }
+
+  .drawer-foot { border-top: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .cart-total { display: flex; justify-content: space-between; font-size: 17px; font-weight: 700; }
+  .cart-note {
+    width: 100%; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-size: 14px; font-family: inherit; resize: none;
+    background: var(--bg); color: var(--text);
+  }
+  .cart-note:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+  .wpp-btn {
+    border: none; cursor: pointer;
+    background: var(--wpp); color: #fff;
+    padding: 14px; border-radius: 12px;
+    font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .15s;
+  }
+  .wpp-btn:hover { background: var(--wpp-dark); }
+  .wpp-btn:disabled { background: var(--border); color: var(--text-soft); cursor: not-allowed; }
+  .wpp-hint { font-size: 12px; color: var(--text-soft); text-align: center; }
+
+  /* ---------- Floating cart (mobile) ---------- */
+  .fab {
+    position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 40;
+    border: none; cursor: pointer;
+    background: var(--accent); color: #fff;
+    padding: 15px 20px; border-radius: 14px;
+    font-size: 15px; font-weight: 700;
+    display: none; align-items: center; justify-content: space-between;
+    box-shadow: 0 6px 20px rgba(160, 62, 97, .4);
+  }
+  .fab.visible { display: flex; }
+  @media (min-width: 640px) { .fab { display: none !important; } }
+
+  footer {
+    text-align: center; font-size: 12px; color: var(--text-soft);
+    padding: 24px 16px 32px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-logo"><img src="logo.jpeg" alt="Nails by Lila"></div>
+      <div>
+        <h1 id="store-name">Nails by Lila</h1>
+        <p id="store-tagline">Insumos de manicuría</p>
+      </div>
+    </div>
+    <button class="cart-btn" id="cart-open" aria-label="Abrir carrito">
+      🛒 <span>Carrito</span> <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+  </div>
+  <div class="filters">
+    <div class="search-box">
+      <span class="search-icon">🔎</span>
+      <input type="search" id="search-input" placeholder="Buscar productos..." aria-label="Buscar productos">
+    </div>
+    <label class="avail-toggle">
+      <input type="checkbox" id="filter-disponible">
+      Solo disponibles
+    </label>
+  </div>
+  <nav class="sections" id="section-nav"></nav>
+</header>
+
+<main id="main">
+  <div class="status-msg" id="status">Cargando catálogo…</div>
+  <div class="status-msg" id="empty-state" hidden>No encontramos productos con esa búsqueda/filtro.</div>
+  <div id="catalog"></div>
+</main>
+
+<button class="fab" id="fab">
+  <span id="fab-label">Ver carrito</span>
+  <span id="fab-total"></span>
+</button>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Carrito de compras">
+  <div class="drawer-head">
+    <h2>Tu pedido</h2>
+    <button class="drawer-close" id="cart-close" aria-label="Cerrar carrito">✕</button>
+  </div>
+  <div class="drawer-items" id="cart-items"></div>
+  <div class="drawer-foot">
+    <div class="cart-total"><span>Total</span><span id="cart-total">$0</span></div>
+    <textarea class="cart-note" id="cart-name" rows="1" placeholder="Tu nombre"></textarea>
+    <textarea class="cart-note" id="cart-note" rows="2" placeholder="Comentario para tu pedido (opcional)"></textarea>
+    <button class="wpp-btn" id="wpp-send" disabled>
+      Proceder al pago
+    </button>
+    <div class="wpp-hint">Tu pedido se envía por WhatsApp para coordinar pago y entrega.</div>
+  </div>
+</aside>
+
+<footer>Los precios pueden variar. El pedido se confirma por WhatsApp.</footer>
+
+<script>
+/* ================= CONFIG =================
+ * 1. Creá un Google Sheet con columnas (fila 1, en minúsculas):
+ *    id | seccion | nombre | descripcion | precio | imagen | disponible
+ * 2. Archivo → Compartir → "Cualquier persona con el enlace" (Lector).
+ * 3. Pegá el ID del sheet acá (el chorizo entre /d/ y /edit en la URL).
+ * 4. Poné el número de WhatsApp destino con código de país, sin + ni espacios.
+ *
+ * Fotos: una subcarpeta de Drive por producto (nombrada igual que su id),
+ * con las fotos de ese producto adentro (cualquier nombre de archivo).
+ * El tab "fotos" del sheet (columnas id | file_id) es el índice que la
+ * página lee — se llena solo con el Apps Script "syncFotos" del README.
+ */
+const CONFIG = {
+  SHEET_ID: "1VZOHrfKm3vfoz30jzcKSnhVe7Ajo51s4GP8YYFMOyOg",
+  SHEET_GID: "725225400",  // pestaña "productos"
+  FOTOS_SHEET: "fotos",    // tab con índice id → file_id de Drive ("" = deshabilitado)
+  WHATSAPP_NUMBER: "",     // ej: "5491122334455"
+  STORE_NAME: "Nails by Lila",
+  STORE_TAGLINE: "Insumos de manicuría",
+  CURRENCY: "$",
+  REFRESH_SECONDS: 300,    // re-lee el sheet cada N segundos (0 = nunca)
+};
+
+/* Datos de muestra: se usan si SHEET_ID está vacío o el fetch falla. */
+const DEMO_DATA = [
+  { seccion: "Esmaltes", nombre: "Esmalte semipermanente rosa", descripcion: "Color intenso, duración 21 días. 15ml.", precio: 4500, imagen: "", disponible: "si" },
+  { seccion: "Esmaltes", nombre: "Esmalte semipermanente nude", descripcion: "Tono natural para todo uso. 15ml.", precio: 4500, imagen: "", disponible: "si" },
+  { seccion: "Esmaltes", nombre: "Top coat brillante", descripcion: "Sellador de alto brillo, no amarillea.", precio: 5200, imagen: "", disponible: "si" },
+  { seccion: "Herramientas", nombre: "Alicate de cutícula profesional", descripcion: "Acero inoxidable, filo de precisión.", precio: 8900, imagen: "", disponible: "si" },
+  { seccion: "Herramientas", nombre: "Lima 100/180", descripcion: "Doble cara, pack x5 unidades.", precio: 2300, imagen: "", disponible: "si" },
+  { seccion: "Herramientas", nombre: "Torno portátil 35000 RPM", descripcion: "Recargable, incluye 6 puntas.", precio: 45000, imagen: "", disponible: "no" },
+  { seccion: "Insumos", nombre: "Algodón deshilachado x500g", descripcion: "Alta absorción, uso profesional.", precio: 3100, imagen: "", disponible: "si" },
+  { seccion: "Insumos", nombre: "Removedor de esmalte 1L", descripcion: "Sin acetona, con vitamina E.", precio: 4800, imagen: "", disponible: "si" },
+  { seccion: "Cabinas", nombre: "Cabina UV/LED 86W", descripcion: "Sensor automático, timer 30/60/90s.", precio: 38500, imagen: "", disponible: "si" },
+];
+
+/* ================= STATE ================= */
+let products = [];          // [{id, seccion, nombre, descripcion, precio, fotos: [urls], disponible}]
+let cart = loadCart();      // { [id]: qty }
+let filters = { query: "", seccion: null, onlyAvailable: false };
+
+function normalizeText(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function matchesFilters(p) {
+  if (filters.seccion && p.seccion !== filters.seccion) return false;
+  if (filters.onlyAvailable && !p.disponible) return false;
+  if (filters.query) {
+    const q = normalizeText(filters.query);
+    const haystack = normalizeText(p.nombre + " " + p.descripcion + " " + p.seccion);
+    if (!haystack.includes(q)) return false;
+  }
+  return true;
+}
+
+/* ================= SHEET LOADING ================= */
+function sheetUrl() {
+  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&gid=${CONFIG.SHEET_GID}`;
+}
+function fotosUrl() {
+  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(CONFIG.FOTOS_SHEET)}`;
+}
+
+/* CSV parser que respeta comillas y comas embebidas. */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = "";
+      if (row.some(f => f.trim() !== "")) rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); if (row.some(f => f.trim() !== "")) rows.push(row); }
+  return rows;
+}
+
+function rowsToProducts(rows, fotoIndex) {
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const idx = name => headers.indexOf(name);
+  const iId = idx("id"), iSec = idx("seccion"), iNom = idx("nombre"), iDesc = idx("descripcion"),
+        iPre = idx("precio"), iImg = idx("imagen"), iDisp = idx("disponible");
+  if (iNom === -1 || iPre === -1) return [];
+  return rows.slice(1).map(r => {
+    const nombre = (r[iNom] || "").trim();
+    /* Determinístico: si el sheet no trae id, se deriva del nombre (no de la
+     * posición de la fila) — reordenar/insertar filas no rompe el link a fotos.
+     * Convención (mayúsculas): SECCION-LINEA-CODIGO, ej. ESM-MELINE-001 donde
+     * "001" es el código de color de esa línea de esmalte. */
+    const id = ((iId >= 0 && r[iId] || "").trim() || slug(nombre)).toUpperCase();
+    const fotos = (fotoIndex[id.toUpperCase()] || []).slice();
+    const directa = (iImg >= 0 && r[iImg] || "").trim();
+    /* Un link a una CARPETA de Drive (no a un archivo) es solo referencia visual
+     * para saber dónde subir fotos — no es una foto, no va al carrusel. */
+    if (directa && !/drive\.google\.com\/drive\/folders\//.test(directa)) {
+      fotos.unshift(resolveImageUrl(directa));
+    }
+    return {
+      id,
+      seccion: (iSec >= 0 && r[iSec] || "General").trim() || "General",
+      nombre,
+      descripcion: (iDesc >= 0 && r[iDesc] || "").trim(),
+      precio: parsePrice(r[iPre]),
+      fotos,
+      disponible: (iDisp >= 0 && r[iDisp] || "si").trim().toLowerCase() !== "no",
+    };
+  }).filter(p => p.nombre);
+}
+
+/* Tab "fotos" (id | file_id) → { productId: [thumbnailUrl, ...] }
+ * Una fila por foto; el orden dentro de un mismo id es el orden de las filas
+ * en el sheet (lo controla el Apps Script que recorre las subcarpetas de Drive,
+ * ver README). El nombre del archivo en Drive es libre — la carpeta (nombrada
+ * igual que el id del producto) es la fuente de verdad, no el filename. */
+function rowsToFotoIndex(rows) {
+  const index = {};
+  if (!rows.length) return index;
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const iId = headers.indexOf("id"), iFid = headers.indexOf("file_id");
+  if (iId === -1 || iFid === -1) return index;
+  for (const r of rows.slice(1)) {
+    const id = (r[iId] || "").trim().toUpperCase();
+    const fileId = (r[iFid] || "").trim();
+    if (!id || !fileId) continue;
+    (index[id] = index[id] || []).push(`https://drive.google.com/thumbnail?id=${fileId}&sz=w600`);
+  }
+  return index;
+}
+
+function parsePrice(raw) {
+  if (raw == null) return 0;
+  const clean = String(raw).replace(/[^\d.,-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".");
+  const n = parseFloat(clean);
+  return isNaN(n) ? 0 : n;
+}
+
+async function loadCatalog() {
+  const status = document.getElementById("status");
+  if (!CONFIG.SHEET_ID) {
+    products = DEMO_DATA.map((p, n) => ({ ...p, id: "p" + n, fotos: [], disponible: p.disponible !== "no" }));
+    status.textContent = "⚠ Modo demo: configurá SHEET_ID en el código para leer tu Google Sheet.";
+    render();
+    return;
+  }
+  try {
+    const [resProd, resFotos] = await Promise.all([
+      fetch(sheetUrl(), { cache: "no-store" }),
+      CONFIG.FOTOS_SHEET ? fetch(fotosUrl(), { cache: "no-store" }).catch(() => null) : Promise.resolve(null),
+    ]);
+    if (!resProd.ok) throw new Error("HTTP " + resProd.status);
+    let fotoIndex = {};
+    if (resFotos && resFotos.ok) {
+      try { fotoIndex = rowsToFotoIndex(parseCSV(await resFotos.text())); } catch {}
+    }
+    const parsed = rowsToProducts(parseCSV(await resProd.text()), fotoIndex);
+    if (!parsed.length) throw new Error("Sheet vacío o columnas incorrectas (se esperan: id, seccion, nombre, descripcion, precio, imagen, disponible)");
+    products = parsed;
+    status.textContent = "";
+    render();
+  } catch (err) {
+    if (!products.length) {
+      status.className = "status-msg error";
+      status.textContent = "No se pudo cargar el catálogo. Verificá que el sheet sea público. (" + err.message + ")";
+    }
+  }
+}
+
+/* ================= IMAGES =================
+ * Acepta en la columna "imagen":
+ *  - URL directa a imagen (https://.../foto.jpg)
+ *  - Link de Google Drive "compartir" (archivo público):
+ *    https://drive.google.com/file/d/<ID>/view?usp=sharing
+ *    https://drive.google.com/open?id=<ID>
+ * Los links de Drive se convierten al endpoint de thumbnail público.
+ */
+function resolveImageUrl(url) {
+  if (!url) return "";
+  const m = url.match(/drive\.google\.com\/(?:file\/d\/([-\w]{20,})|(?:open|uc)\?[^#]*\bid=([-\w]{20,}))/);
+  const id = m && (m[1] || m[2]);
+  if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w600`;
+  return url;
+}
+
+/* ================= RENDER ================= */
+function money(n) {
+  return CONFIG.CURRENCY + n.toLocaleString("es-AR", { maximumFractionDigits: 2 });
+}
+
+function render() {
+  renderCatalog();
+  renderCart();
+}
+
+function renderCatalog() {
+  /* Los chips de sección salen de TODOS los productos (no de los filtrados) para
+   * que no desaparezcan cuando un filtro deja una sección en cero resultados. */
+  const allSections = [...new Set(products.map(p => p.seccion))];
+  const nav = document.getElementById("section-nav");
+  nav.innerHTML = "";
+
+  const chip = (label, active, onClick) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "section-chip" + (active ? " active" : "");
+    b.textContent = label;
+    b.onclick = onClick;
+    nav.appendChild(b);
+  };
+  chip("Todas", !filters.seccion, () => { filters.seccion = null; renderCatalog(); });
+  for (const sec of allSections) {
+    chip(sec, filters.seccion === sec, () => {
+      filters.seccion = filters.seccion === sec ? null : sec;
+      renderCatalog();
+    });
+  }
+
+  const filtered = products.filter(matchesFilters);
+  const bySection = new Map();
+  for (const p of filtered) {
+    if (!bySection.has(p.seccion)) bySection.set(p.seccion, []);
+    bySection.get(p.seccion).push(p);
+  }
+
+  document.getElementById("empty-state").hidden = filtered.length > 0;
+
+  const catalog = document.getElementById("catalog");
+  catalog.innerHTML = "";
+  for (const [sec, items] of bySection) {
+    const block = document.createElement("section");
+    block.className = "section-block";
+    block.id = "sec-" + slug(sec);
+
+    const h2 = document.createElement("h2");
+    h2.textContent = sec;
+    const count = document.createElement("div");
+    count.className = "section-count";
+    count.textContent = items.length + (items.length === 1 ? " producto" : " productos");
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    for (const p of items) grid.appendChild(productCard(p));
+
+    block.append(h2, count, grid);
+    catalog.appendChild(block);
+  }
+}
+
+function productCard(p) {
+  const card = document.createElement("article");
+  card.className = "card" + (p.disponible ? "" : " unavailable");
+
+  const img = document.createElement("div");
+  img.className = "card-img";
+  if (p.fotos.length) {
+    const fallback = document.createElement("span");
+    fallback.textContent = "💅";
+    const el = document.createElement("img");
+    el.alt = p.nombre;
+    el.loading = "lazy";
+    img.append(fallback, el);
+
+    /* El endpoint thumbnail de Drive falla esporádicamente en frío: reintentar
+     * con backoff antes de caer al placeholder (sin destruir el carousel). */
+    let retries = 0;
+    el.onload = () => { el.style.visibility = ""; };
+    el.onerror = () => {
+      if (retries < 3) {
+        retries++;
+        const sep = el.dataset.src.includes("?") ? "&" : "?";
+        setTimeout(() => { el.src = el.dataset.src + sep + "r=" + retries; }, 700 * retries);
+      } else el.style.visibility = "hidden";
+    };
+
+    let current = 0;
+    const show = i => {
+      current = (i + p.fotos.length) % p.fotos.length;
+      retries = 0;
+      el.dataset.src = p.fotos[current];
+      el.src = p.fotos[current];
+      dots.querySelectorAll("span").forEach((d, n) => d.classList.toggle("on", n === current));
+    };
+
+    const dots = document.createElement("div");
+    dots.className = "img-dots";
+    if (p.fotos.length > 1) {
+      p.fotos.forEach((_, n) => {
+        const d = document.createElement("span");
+        d.onclick = e => { e.stopPropagation(); show(n); };
+        dots.appendChild(d);
+      });
+      const prev = document.createElement("button");
+      prev.className = "img-nav prev";
+      prev.textContent = "‹";
+      prev.setAttribute("aria-label", "Foto anterior");
+      prev.onclick = e => { e.stopPropagation(); show(current - 1); };
+      const next = document.createElement("button");
+      next.className = "img-nav next";
+      next.textContent = "›";
+      next.setAttribute("aria-label", "Foto siguiente");
+      next.onclick = e => { e.stopPropagation(); show(current + 1); };
+      img.append(prev, next, dots);
+    }
+    show(0);
+  } else img.textContent = "💅";
+
+  const body = document.createElement("div");
+  body.className = "card-body";
+
+  const name = document.createElement("div");
+  name.className = "card-name";
+  name.textContent = p.nombre;
+
+  const footer = document.createElement("div");
+  footer.className = "card-footer";
+  const price = document.createElement("span");
+  price.className = "card-price";
+  price.textContent = money(p.precio);
+  footer.appendChild(price);
+
+  const action = document.createElement("div");
+  action.dataset.action = p.id;
+  footer.appendChild(action);
+
+  body.appendChild(name);
+  if (p.descripcion) {
+    const desc = document.createElement("div");
+    desc.className = "card-desc";
+    desc.textContent = p.descripcion;
+    body.appendChild(desc);
+  }
+  body.appendChild(footer);
+  card.append(img, body);
+  renderCardAction(action, p);
+  return card;
+}
+
+function renderCardAction(container, p) {
+  container.innerHTML = "";
+  if (!p.disponible) {
+    const badge = document.createElement("span");
+    badge.className = "sold-out";
+    badge.textContent = "Sin stock";
+    container.appendChild(badge);
+    return;
+  }
+  const qty = cart[p.id] || 0;
+  if (qty === 0) {
+    const btn = document.createElement("button");
+    btn.className = "add-btn";
+    btn.textContent = "+";
+    btn.setAttribute("aria-label", "Agregar " + p.nombre);
+    btn.onclick = () => setQty(p.id, 1);
+    container.appendChild(btn);
+  } else {
+    const stepper = document.createElement("div");
+    stepper.className = "qty-stepper";
+    const minus = document.createElement("button");
+    minus.textContent = "−";
+    minus.onclick = () => setQty(p.id, qty - 1);
+    const num = document.createElement("span");
+    num.textContent = qty;
+    const plus = document.createElement("button");
+    plus.textContent = "+";
+    plus.onclick = () => setQty(p.id, qty + 1);
+    stepper.append(minus, num, plus);
+    container.appendChild(stepper);
+  }
+}
+
+/* ================= CART ================= */
+function loadCart() {
+  try { return JSON.parse(localStorage.getItem("manicart") || "{}"); }
+  catch { return {}; }
+}
+function saveCart() { localStorage.setItem("manicart", JSON.stringify(cart)); }
+
+function setQty(id, qty) {
+  if (qty <= 0) delete cart[id];
+  else cart[id] = qty;
+  saveCart();
+  render();
+}
+
+function cartEntries() {
+  return Object.entries(cart)
+    .map(([id, qty]) => ({ product: products.find(p => p.id === id), qty }))
+    .filter(e => e.product);
+}
+
+function cartTotal() {
+  return cartEntries().reduce((sum, e) => sum + e.product.precio * e.qty, 0);
+}
+
+function renderCart() {
+  const entries = cartEntries();
+  const count = entries.reduce((s, e) => s + e.qty, 0);
+  const total = cartTotal();
+
+  document.getElementById("cart-badge").textContent = count;
+  const fab = document.getElementById("fab");
+  fab.classList.toggle("visible", count > 0);
+  document.getElementById("fab-label").textContent = `Ver carrito (${count})`;
+  document.getElementById("fab-total").textContent = money(total);
+  document.getElementById("cart-total").textContent = money(total);
+  document.getElementById("wpp-send").disabled = count === 0;
+
+  const box = document.getElementById("cart-items");
+  box.innerHTML = "";
+  if (!entries.length) {
+    box.innerHTML = '<div class="cart-empty">Tu carrito está vacío.<br>Agregá productos desde el catálogo.</div>';
+    return;
+  }
+  for (const { product: p, qty } of entries) {
+    const row = document.createElement("div");
+    row.className = "cart-row";
+
+    const info = document.createElement("div");
+    info.className = "cart-row-info";
+    const name = document.createElement("div");
+    name.className = "cart-row-name";
+    name.textContent = p.nombre;
+    const price = document.createElement("div");
+    price.className = "cart-row-price";
+    price.textContent = money(p.precio) + " c/u";
+    info.append(name, price);
+
+    const stepper = document.createElement("div");
+    stepper.className = "qty-stepper";
+    const minus = document.createElement("button");
+    minus.textContent = "−";
+    minus.onclick = () => setQty(p.id, qty - 1);
+    const num = document.createElement("span");
+    num.textContent = qty;
+    const plus = document.createElement("button");
+    plus.textContent = "+";
+    plus.onclick = () => setQty(p.id, qty + 1);
+    stepper.append(minus, num, plus);
+
+    const subtotal = document.createElement("div");
+    subtotal.className = "cart-row-subtotal";
+    subtotal.textContent = money(p.precio * qty);
+
+    const remove = document.createElement("button");
+    remove.className = "cart-remove";
+    remove.textContent = "🗑";
+    remove.setAttribute("aria-label", "Quitar " + p.nombre);
+    remove.onclick = () => setQty(p.id, 0);
+
+    row.append(info, stepper, subtotal, remove);
+    box.appendChild(row);
+  }
+}
+
+/* ================= WHATSAPP ================= */
+function buildWhatsAppMessage() {
+  const entries = cartEntries();
+  const name = document.getElementById("cart-name").value.trim();
+  const note = document.getElementById("cart-note").value.trim();
+  const lines = [];
+  lines.push("🛍 *Nuevo pedido — " + CONFIG.STORE_NAME + "*");
+  if (name) lines.push("Cliente: " + name);
+  lines.push("");
+  for (const { product: p, qty } of entries) {
+    lines.push(`• ${qty} x ${p.nombre} — ${money(p.precio * qty)}`);
+  }
+  lines.push("");
+  lines.push("*Total: " + money(cartTotal()) + "*");
+  if (note) {
+    lines.push("");
+    lines.push("Comentario: " + note);
+  }
+  return lines.join("\n");
+}
+
+function sendWhatsApp() {
+  if (!CONFIG.WHATSAPP_NUMBER) {
+    alert("Falta configurar WHATSAPP_NUMBER en el código.");
+    return;
+  }
+  const url = "https://wa.me/" + CONFIG.WHATSAPP_NUMBER + "?text=" + encodeURIComponent(buildWhatsAppMessage());
+  window.open(url, "_blank");
+}
+
+/* ================= UI WIRING ================= */
+function slug(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-");
+}
+
+function openDrawer(open) {
+  document.getElementById("drawer").classList.toggle("open", open);
+  document.getElementById("overlay").classList.toggle("open", open);
+  document.body.style.overflow = open ? "hidden" : "";
+}
+
+document.getElementById("cart-open").onclick = () => openDrawer(true);
+document.getElementById("fab").onclick = () => openDrawer(true);
+document.getElementById("cart-close").onclick = () => openDrawer(false);
+document.getElementById("overlay").onclick = () => openDrawer(false);
+document.getElementById("wpp-send").onclick = sendWhatsApp;
+document.addEventListener("keydown", e => { if (e.key === "Escape") openDrawer(false); });
+
+document.getElementById("search-input").oninput = e => {
+  filters.query = e.target.value;
+  renderCatalog();
+};
+document.getElementById("filter-disponible").onchange = e => {
+  filters.onlyAvailable = e.target.checked;
+  renderCatalog();
+};
+
+/* ================= INIT ================= */
+document.getElementById("store-name").textContent = CONFIG.STORE_NAME;
+document.getElementById("store-tagline").textContent = CONFIG.STORE_TAGLINE;
+document.title = CONFIG.STORE_NAME;
+
+loadCatalog();
+if (CONFIG.REFRESH_SECONDS > 0) {
+  setInterval(loadCatalog, CONFIG.REFRESH_SECONDS * 1000);
+}
+</script>
+</body>
+</html>
